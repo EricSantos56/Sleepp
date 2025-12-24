@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SleepWell • Sono Tranquilo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #030512;
+            --card-glass: rgba(255, 255, 255, 0.05);
+            --primary: #8b5cf6;
+            --secondary: #06b6d4;
+            --accent: #10b981;
+            --gold: #f59e0b;
+        }
+
+        body {
+            margin: 0; font-family: 'Inter', -apple-system, sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, var(--bg));
+            color: #fff; min-height: 100vh; overflow-x: hidden;
+        }
+
+        .app-container { max-width: 480px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+
+        header { text-align: center; padding: 30px 0; }
+        .logo { font-size: 34px; font-weight: 900; letter-spacing: -1.5px; background: linear-gradient(to right, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* Estilo Glassmorphism */
+        .card {
+            background: var(--card-glass); border-radius: 30px; padding: 25px;
+            margin-bottom: 20px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        .score-large { font-size: 72px; font-weight: 900; color: var(--primary); text-shadow: 0 0 30px rgba(139, 92, 246, 0.4); margin: 10px 0; }
+        
+        .premium-pill {
+            background: linear-gradient(90deg, var(--gold), #fbbf24); color: #000;
+            padding: 8px 15px; border-radius: 50px; font-size: 12px; font-weight: 800; display: inline-block; margin-bottom: 10px;
+        }
+
+        .btn-sleep {
+            width: 100%; padding: 24px; border-radius: 25px; border: none;
+            font-size: 20px; font-weight: 800; cursor: pointer;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #fff; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3); transition: 0.3s;
+        }
+        .btn-sleep:active { transform: scale(0.95); }
+
+        .audio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .audio-item {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; border-radius: 20px; cursor: pointer; text-align: center; transition: 0.3s;
+        }
+        .audio-item.active { background: var(--primary); border-color: #fff; }
+
+        /* Tela de Sono Ativa (Overlay) */
+        #sleepOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 10000; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .clock { font-size: 60px; font-weight: 200; opacity: 0.5; margin-bottom: 20px; }
+        .pulse-btn { 
+            width: 120px; height: 120px; border-radius: 50%; background: rgba(139, 92, 246, 0.2);
+            border: 2px solid var(--primary); color: #fff; cursor: pointer; animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(139, 92, 246, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); } }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <div class="logo">SleepWell</div>
+        <div class="premium-pill">ASSINANTE PRO</div>
+    </header>
+
+    <div class="card" style="text-align:center;">
+        <span style="opacity: 0.5; text-transform: uppercase; font-size: 11px; letter-spacing: 2px;">Qualidade de ontem</span>
+        <div id="score" class="score-large">--</div>
+        <div id="status" style="color: var(--accent); font-weight: 600;">Sono Profundo Detectado</div>
+    </div>
+
+    <button class="btn-sleep" onclick="startSleepMode()">🌙 PREPARAR PARA DORMIR</button>
+    <p style="text-align:center; font-size: 11px; opacity: 0.5; margin-top: 10px;">Clique e coloque o celular na mesa de cabeceira</p>
+
+    <div class="card">
+        <div style="font-weight: 700; font-size: 14px;">Ambiente Relaxante</div>
+        <div class="audio-grid">
+            <div class="audio-item" onclick="toggleAudio('rain', this)">🌧️ Chuva</div>
+            <div class="audio-item" onclick="toggleAudio('waves', this)">🌊 Ondas</div>
+        </div>
+        <audio id="sndRain" loop src="https://www.soundjay.com/nature/rain-07.mp3"></audio>
+        <audio id="sndWaves" loop src="https://www.soundjay.com/nature/ocean-wave-1.mp3"></audio>
+    </div>
+
+    <div class="card">
+        <canvas id="mainChart" height="180"></canvas>
+    </div>
+</div>
+
+<div id="sleepOverlay">
+    <div id="liveClock" class="clock">00:00</div>
+    <div style="margin-bottom: 40px; text-align: center; opacity: 0.4; font-size: 14px;">
+        Monitoramento Ativo...<br>Pode bloquear sua tela
+    </div>
+    <button class="pulse-btn" onclick="stopSleepMode()">ACORDEI</button>
+</div>
+
+<script>
+    let chart;
+    let history = [72, 68, 85, 90, 78, 88, 0];
+
+    // Inicialização do App
+    window.onload = function() {
+        initChart();
+        updateClock();
+        setInterval(updateClock, 1000);
+    };
+
+    function initChart() {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['S','T','Q','Q','S','S','D'],
+                datasets: [{ 
+                    data: history, 
+                    borderColor: '#8b5cf6', 
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    pointRadius: 0
+                }]
+            },
+            options: { 
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { display: false, min: 0, max: 100 },
+                    x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.2)' } }
+                }
+            }
+        });
+    }
+
+    // Gerenciamento de Som
+    function toggleAudio(type, el) {
+        const rain = document.getElementById('sndRain');
+        const waves = document.getElementById('sndWaves');
+        document.querySelectorAll('.audio-item').forEach(i => i.classList.remove('active'));
+
+        if(type === 'rain') {
+            waves.pause();
+            if(rain.paused) { rain.play(); el.classList.add('active'); } else rain.pause();
+        } else {
+            rain.pause();
+            if(waves.paused) { waves.play(); el.classList.add('active'); } else waves.pause();
+        }
+    }
+
+    // Modo de Sono (O que acontece antes de deitar)
+    function startSleepMode() {
+        document.getElementById('sleepOverlay').style.display = 'flex';
+        // Aqui você pode adicionar um comando para manter a tela ligada se desejar
+    }
+
+    function stopSleepMode() {
+        document.getElementById('sleepOverlay').style.display = 'none';
+        
+        // Simular processamento da noite
+        const newScore = Math.floor(Math.random() * (98 - 80 + 1)) + 80;
+        document.getElementById('score').innerText = newScore;
+        
+        history.shift();
+        history.push(newScore);
+        chart.update();
+        
+        alert("Bom dia! Seu score de sono foi calculado.");
+    }
+
+    function updateClock() {
+        const now = new Date();
+        const time = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        document.getElementById('liveClock').innerText = time;
+    }
+</script>
+
+</body>
+</html>
