@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SleepWell • Sono Tranquilo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg: #05070a; --card: #1e233c; --primary: #a582ff; --text: #fff; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 400px; padding: 20px; }
+        .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 15px; text-align: center; }
+        .score-display { font-size: 60px; font-weight: bold; color: var(--primary); margin: 10px 0; }
+        .btn-main { width: 100%; padding: 18px; border-radius: 15px; border: none; background: #fff; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .btn-audio { background: #333; color: #fff; border: none; padding: 10px; margin: 5px; border-radius: 10px; cursor: pointer; }
+        .btn-audio.active { background: var(--primary); }
+        #checkoutModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99; justify-content:center; align-items:center; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header style="text-align:center; padding: 20px;">
+        <h1 style="margin:0; color:var(--primary);">SleepWell</h1>
+        <small>SONO TRANQUILO</small>
+    </header>
+
+    <div class="card" id="promoBanner" onclick="openCheckout()" style="background: linear-gradient(90deg, #6366f1, #a855f7); cursor:pointer;">
+        <strong>👑 Obter Versão PRO</strong>
+    </div>
+
+    <div class="card">
+        <div>Qualidade do Sono</div>
+        <div id="score" class="score-display">--</div>
+        <div id="status">Clique abaixo para simular</div>
+    </div>
+
+    <div class="card">
+        <div>Sons para Dormir</div>
+        <button class="btn-audio" onclick="toggleAudio(this)">🌧️ Chuva (On/Off)</button>
+        <audio id="audioRain" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+    </div>
+
+    <div class="card">
+        <canvas id="mainChart" height="150"></canvas>
+    </div>
+
+    <button class="btn-main" onclick="processSleep()">Simular Noite de Sono</button>
+</div>
+
+<div id="checkoutModal">
+    <div class="card" style="border: 2px solid var(--primary); width: 80%;">
+        <h2>SleepWell PRO</h2>
+        <p>Apenas R$ 29,90</p>
+        <button class="btn-main" onclick="confirmPay()">PAGAR AGORA</button>
+        <button onclick="closeCheckout()" style="background:none; color:#fff; border:none; margin-top:15px;">Voltar</button>
+    </div>
+</div>
+
+<script>
+    let chart;
+    let history = [70, 75, 80, 72, 88, 92, 85];
+
+    // Inicializa o gráfico apenas quando o documento carregar
+    window.onload = function() {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['S','T','Q','Q','S','S','D'],
+                datasets: [{ data: history, borderColor: '#a582ff', tension: 0.4 }]
+            },
+            options: { plugins: { legend: { display: false } }, scales: { y: { display: false } } }
+        });
+        checkPremium();
+    };
+
+    function processSleep() {
+        const newScore = Math.floor(Math.random() * 20) + 80;
+        document.getElementById('score').innerText = newScore;
+        document.getElementById('status').innerText = "Processado com sucesso!";
+        
+        history.shift();
+        history.push(newScore);
+        chart.update();
+    }
+
+    function toggleAudio(btn) {
+        const audio = document.getElementById('audioRain');
+        if (audio.paused) {
+            audio.play();
+            btn.classList.add('active');
+        } else {
+            audio.pause();
+            btn.classList.remove('active');
+        }
+    }
+
+    function openCheckout() { document.getElementById('checkoutModal').style.display = 'flex'; }
+    function closeCheckout() { document.getElementById('checkoutModal').style.display = 'none'; }
+    
+    function confirmPay() {
+        localStorage.setItem('pro', 'true');
+        alert("Pagamento Simulado com Sucesso!");
+        checkPremium();
+        closeCheckout();
+    }
+
+    function checkPremium() {
+        if(localStorage.getItem('pro') === 'true') {
+            document.getElementById('promoBanner').style.display = 'none';
+            document.getElementById('status').innerText = "✨ Modo PRO Ativo";
+        }
+    }
+</script>
+
+</body>
+</html>
